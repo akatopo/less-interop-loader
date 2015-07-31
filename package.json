@@ -1,8 +1,8 @@
 {
-  "name": "less-loader",
-  "version": "2.2.0",
-  "author": "Tobias Koppers @sokra",
-  "description": "less loader module for webpack",
+  "name": "less-interop-loader",
+  "version": "0.0.0",
+  "author": "YJ Yang <chcokr@gmail.com>",
+  "description": "Import LESS variables into JS",
   "scripts": {
     "test": "mocha -R spec",
     "test-source-map": "webpack --config test/sourceMap/webpack.config.js && open ./test/sourceMap/index.html"
@@ -22,15 +22,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/webpack/less-loader.git"
+    "url": "git://github.com/chcokr/less-interop-loader.git"
   },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "http://www.opensource.org/licenses/mit-license.php"
-    }
-  ],
+  "license": "MIT",
   "dependencies": {
-    "loader-utils": "^0.2.5"
+    "color": "*",
+    "loader-utils": "^0.2.5",
+    "lodash.isstring": "*"
   }
 }

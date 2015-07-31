@@ -1,14 +1,120 @@
-"use strict";
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Authors
-		Tobias Koppers @sokra
-		Johannes Ewald @jhnns
-*/
-var less = require("less");
+var less = require('less');
 var fs = require("fs");
 var loaderUtils = require("loader-utils");
 var path = require("path");
+
+var color = require('color');
+var LessColor = require('less/lib/less/tree/color');
+var isString = require('lodash.isstring');
+
+var lessFuncs = less.functions.functionRegistry._data;
+
+function lessVarNameToJsName(name) {
+	var replaced = name.replace(/\-./g, function (match) {
+		return match.charAt(1).toUpperCase();
+	});
+	return replaced.slice(1); // getting rid of the @
+}
+
+function convertLeafNode(v, variablesSoFar) {
+	if (v.name === 'lighten' || v.name === 'darken') {
+		var sourceColor = convertLeafNode(v.args[0].value[0], variablesSoFar);
+		var sourceColorLess;
+		if (sourceColor instanceof LessColor) {
+			sourceColorLess = sourceColor;
+		} else {
+			var sourceColorParsedRGB = color(sourceColor).rgb();
+			sourceColorLess = lessFuncs.rgb(
+				sourceColorParsedRGB.r,
+				sourceColorParsedRGB.g,
+				sourceColorParsedRGB.b);
+		}
+		return lessFuncs[v.name](sourceColorLess, v.args[1].value[0]).toRGB();
+	}
+}
+if (v.name) {
+	return variablesSoFar[v.name];
+}
+
+if (v.rgb && v.alpha) {
+	return [
+		'rgba(', v.rgb[0], ',', v.rgb[1], ',', v.rgb[2], ',', v.alpha, ')'
+	].join('');
+}
+if (v.rgb && !v.alpha) {
+	return [
+		'rgb(', v.rgb[0], ',', v.rgb[1], ',', v.rgb[2], ')'
+	].join('');
+}
+
+var unit = v.unit;
+if (unit &&
+	unit.denominator &&
+	unit.denominator.length === 0 &&
+	unit.numerator[0] === 'px') {
+	return v.value;
+}
+if (unit &&
+	unit.denominator &&
+	unit.denominator.length === 0 &&
+	unit.numerator[0] === '%') {
+	return v.value + '%';
+}
+
+if (v.quote) {
+	return v.quote + v.value + v.quote;
+}
+
+if (v.value) {
+	return v.value;
+}
+
+return v;
+}
+
+function convertLessValueToJs(v, variablesSoFar) {
+	if (!v.value && Array.isArray(v) && v.length === 1) {
+		return convertLeafNode(v[0], variablesSoFar);
+	}
+
+	var val = v.value;
+
+	if (Array.isArray(val)) {
+		var arr = val.map(function (item) {
+			if (item.value) {
+				return convertLessValueToJs(item.value, variablesSoFar);
+			} else {
+				return item;
+			}
+		});
+
+		if (arr.every(function (e) { return isString(e) })) {
+			return arr.join(', ');
+		}
+
+		return arr.length === 1 ? arr[0] : arr;
+	}
+
+	return convertLeafNode(v);
+}
+
+function extractFromRules(rules, variablesSoFar) {
+	variablesSoFar = variablesSoFar || {};
+
+	rules.forEach(function (rule) {
+		if (rule.importedFilename) {
+			var importedRules = extractFromRules(rule.root.rules, variablesSoFar);
+			variablesSoFar = Object.assign(variablesSoFar, importedRules);
+		}
+
+		if (rule.variable && rule.name && rule.value) {
+			variablesSoFar[rule.name] =
+				convertLessValueToJs(rule.value, variablesSoFar);
+		}
+	});
+
+	return variablesSoFar;
+}
 
 var trailingSlash = /[\\\/]$/;
 
@@ -58,8 +164,7 @@ module.exports = function(source) {
 		};
 	}
 
-	less.render(source, config, function(e, result) {
-		var parsedMap;
+	less.parse(source, config, function (e, tree) {
 		var cb = finalCb;
 		// Less is giving us double callbacks sometimes :(
 		// Thus we need to mark the callback as "has been called"
@@ -67,17 +172,14 @@ module.exports = function(source) {
 		finalCb = null;
 		if(e) return cb(formatLessRenderError(e));
 
-		if (result.map) {
-			parsedMap = JSON.parse(result.map);
+		var lessVariables = extractFromRules(tree.rules);
 
-			parsedMap.sources = parsedMap.sources.map(function(file) {
-				return path.basename(file);
-			});
+		var jsVariables = {};
+		Object.keys(lessVariables).forEach(function (key) {
+			jsVariables[lessVarNameToJsName(key)] = lessVariables[key];
+		});
 
-			result.map = JSON.stringify(parsedMap);
-		}
-
-		cb(null, result.css, result.map);
+		cb(null, "module.exports = " + JSON.stringify(jsVariables));
 	});
 };
 
