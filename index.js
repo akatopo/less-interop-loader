@@ -31,45 +31,45 @@ function convertLeafNode(v, variablesSoFar) {
 		}
 		return lessFuncs[v.name](sourceColorLess, v.args[1].value[0]).toRGB();
 	}
-}
-if (v.name) {
-	return variablesSoFar[v.name];
-}
 
-if (v.rgb && v.alpha) {
-	return [
-		'rgba(', v.rgb[0], ',', v.rgb[1], ',', v.rgb[2], ',', v.alpha, ')'
-	].join('');
-}
-if (v.rgb && !v.alpha) {
-	return [
-		'rgb(', v.rgb[0], ',', v.rgb[1], ',', v.rgb[2], ')'
-	].join('');
-}
+	if (v.name) {
+		return variablesSoFar[v.name];
+	}
 
-var unit = v.unit;
-if (unit &&
-	unit.denominator &&
-	unit.denominator.length === 0 &&
-	unit.numerator[0] === 'px') {
-	return v.value;
-}
-if (unit &&
-	unit.denominator &&
-	unit.denominator.length === 0 &&
-	unit.numerator[0] === '%') {
-	return v.value + '%';
-}
+	if (v.rgb && v.alpha) {
+		return [
+			'rgba(', v.rgb[0], ',', v.rgb[1], ',', v.rgb[2], ',', v.alpha, ')'
+		].join('');
+	}
+	if (v.rgb && !v.alpha) {
+		return [
+			'rgb(', v.rgb[0], ',', v.rgb[1], ',', v.rgb[2], ')'
+		].join('');
+	}
 
-if (v.quote) {
-	return v.quote + v.value + v.quote;
-}
+	var unit = v.unit;
+	if (unit &&
+		unit.denominator &&
+		unit.denominator.length === 0 &&
+		unit.numerator[0] === 'px') {
+		return v.value;
+	}
+	if (unit &&
+		unit.denominator &&
+		unit.denominator.length === 0 &&
+		unit.numerator[0] === '%') {
+		return v.value + '%';
+	}
 
-if (v.value) {
-	return v.value;
-}
+	if (v.quote) {
+		return v.quote + v.value + v.quote;
+	}
 
-return v;
+	if (v.value) {
+		return v.value;
+	}
+
+	return v;
 }
 
 function convertLessValueToJs(v, variablesSoFar) {
