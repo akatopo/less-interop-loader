@@ -1,6 +1,6 @@
 {
   "name": "less-interop-loader",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "author": "YJ Yang <chcokr@gmail.com>",
   "description": "Import LESS variables into JS",
   "scripts": {
