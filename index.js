@@ -3,6 +3,7 @@ var fs = require("fs");
 var loaderUtils = require("loader-utils");
 var path = require("path");
 
+var assign = require('lodash.assign');
 var color = require('color');
 var LessColor = require('less/lib/less/tree/color');
 var isString = require('lodash.isstring');
@@ -104,7 +105,7 @@ function extractFromRules(rules, variablesSoFar) {
 	rules.forEach(function (rule) {
 		if (rule.importedFilename) {
 			var importedRules = extractFromRules(rule.root.rules, variablesSoFar);
-			variablesSoFar = Object.assign(variablesSoFar, importedRules);
+			variablesSoFar = assign(variablesSoFar, importedRules);
 		}
 
 		if (rule.variable && rule.name && rule.value) {
