@@ -19,18 +19,20 @@ function lessVarNameToJsName(name) {
 
 function convertLeafNode(v, variablesSoFar) {
 	if (v.name === 'lighten' || v.name === 'darken') {
-		var sourceColor = convertLeafNode(v.args[0].value[0], variablesSoFar);
+		var sourceColor = typeof v.args[0].value === 'string' ?
+			v.args[0].value :
+			convertLeafNode(v.args[0], variablesSoFar);
 		var sourceColorLess;
 		if (sourceColor instanceof LessColor) {
 			sourceColorLess = sourceColor;
 		} else {
 			var sourceColorParsedRGB = color(sourceColor).rgb();
 			sourceColorLess = lessFuncs.rgb(
-				sourceColorParsedRGB.r,
-				sourceColorParsedRGB.g,
-				sourceColorParsedRGB.b);
+				sourceColorParsedRGB.color[0],
+				sourceColorParsedRGB.color[1],
+				sourceColorParsedRGB.color[2]);
 		}
-		return lessFuncs[v.name](sourceColorLess, v.args[1].value[0]).toRGB();
+		return lessFuncs[v.name](sourceColorLess, v.args[1]).toRGB();
 	}
 
 	if (v.name) {
